@@ -1,0 +1,403 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Elaboration de la cartographie de la pauvreté du Togo\"\n",
+        "subtitle: \"Méthode 1: Indice de bien-être pondérée par la population \"\n",
+        "author: \"komlan Nouwokpo\"\n",
+        "format: html\n",
+        "jupyter: python3\n",
+        "---\n",
+        "\n",
+        "\n",
+        "## Introduction\n",
+        "\n",
+        "La cartographie de la pauvreté est utile pour plusieurs raison:\n",
+        "\n",
+        "- Mieux cibler les couches les plus vulnérables;\n",
+        "- Mieux orienter les aides aux populations\n",
+        "\n",
+        "Pour élaborer la cartographie de la pauvreté, il est d'usage d'utiliser les données d'enquête portant sur les dépenses des ménages. Avec les données satellitaires et des machines learnings, Meta/facebook permet d'avoir des données sur la densité de la population et sur le niveau de richesse de la population.\n",
+        "\n",
+        "Nous allons comparer ces deux deux méthodes en utilisant dans un premier temps les données de Meta en s'inspirant de la méthodologie utilisée ici <https://learn.geo4.dev/Population-Weighted-Wealth.html> et utilisant les données de l'enquête EHCV de 2021-2022.\n",
+        "\n",
+        "\n",
+        "## Importation des données\n",
+        "\n",
+        "Les données à utiliser sont téléchargeables sur le site de <https://data.humdata.org/>:\n",
+        "\n",
+        "- Les données cartographiques (shapefiles) du Togo, niveau 3, les [**communes**](https://data.humdata.org/dataset/cod-ab-tgo);\n",
+        "- La densité de la [**population**](https://data.humdata.org/dataset/highresolutionpopulationdensitymaps-tgo);\n",
+        "- L'indice de bien-être relatif [**RWI**](https://data.humdata.org/dataset/relative-wealth-index)\n",
+        "\n",
+        "Pour plus de detail sur la densité de la population et le RWI, veuillez lire les metadonnées de ces données.\n"
+      ],
+      "id": "337d0231"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# les packages à utiliser\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import geopandas as gpd\n",
+        "\n",
+        "# importation de la carte\n",
+        "\n",
+        "carte = gpd.read_file('data/shapefiles/tgo_admbnda_adm3_inseed_20210107.shp')\n",
+        "\n",
+        "\n",
+        "# Importation des données de RWI\n",
+        "rwi = pd.read_csv('data/tgo_relative_wealth_index.csv')\n",
+        "rwi = gpd.GeoDataFrame(rwi, geometry=gpd.points_from_xy(rwi['longitude'], rwi['latitude']))\n",
+        "rwi.set_crs('epsg:4326',inplace=True)"
+      ],
+      "id": "19a79bb7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Les données de population utilisées sont télécharger sur le site Worldpop. Cette fonction importe les données \n"
+      ],
+      "id": "2eaed80f"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Importation des données de la population\n",
+        "import requests\n",
+        "import rioxarray\n",
+        "\n",
+        "def gather_worldpop_data(data_type, country_iso=None, year=2022):\n",
+        "    \"\"\"\n",
+        "    Build the url to pull WorldPop data from the API\n",
+        "\n",
+        "    Inputs:\n",
+        "        data_type (string): Data type options are 'pop' (population),\n",
+        "            'births', 'pregnancies', and 'urban_change'.capitalize\n",
+        "        country_iso (string): The 3-letter country code, if desired. Default\n",
+        "            will be global. \n",
+        "        year (int): the 4-digit year of interest for data. Default will be\n",
+        "            2015.\n",
+        "\n",
+        "    Return (str, rioxarray DataArray): returns the name of the .tif file\n",
+        "        downloaded onto your computer containing the data and the DataArray\n",
+        "        containing the population counts read in using rioxarray.\n",
+        "    \"\"\"\n",
+        "\n",
+        "    # Build the API url according to user selection\n",
+        "    url_base = \"https://www.worldpop.org/rest/data\"\n",
+        "    url = url_base + '/'  + data_type + '/wpgp'\n",
+        "    if country_iso:\n",
+        "        url = url + '?iso3=' + country_iso\n",
+        "\n",
+        "    # Request the desired data; filter by year \n",
+        "    json_resp = requests.post(url).json()\n",
+        "    json_resp = json_resp['data']['popyear' == year]\n",
+        "    # Obtain exact .geotiff file name for the desired data\n",
+        "    geotiff_file = json_resp['files'][0]\n",
+        "    print('Obtaining file',geotiff_file)\n",
+        "\n",
+        "    geotiff_data = requests.get(geotiff_file)\n",
+        "    \n",
+        "    file_name = 'worldpop_' + country_iso + '_' + str(year) + '.tif'\n",
+        "    print('Writing to',file_name)\n",
+        "    with open(file_name,'wb') as f:\n",
+        "        f.write(geotiff_data.content)\n",
+        "\n",
+        "    # Read in the WorldPop data as a GeoTIFF\n",
+        "    worldpop_raster = rioxarray.open_rasterio(file_name)\n",
+        "\n",
+        "    return file_name, worldpop_raster"
+      ],
+      "id": "1f8c102e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Importation des données du Togo\n"
+      ],
+      "id": "f9fc7c31"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "togo_pop_file, togo_pop = gather_worldpop_data('pop','TGO',2022)\n",
+        "\n",
+        "\n",
+        "togo_pop = togo_pop.squeeze().drop('spatial_ref').drop('band')\n",
+        "togo_pop.name = 'population'\n",
+        "worldpop_pop_df = togo_pop.to_dataframe().reset_index()\n",
+        "\n",
+        "# remove populations below 0\n",
+        "pop = worldpop_pop_df[worldpop_pop_df['population'] > 0]\n",
+        "# convert lat/long to geometry\n",
+        "pop['geometry'] = gpd.points_from_xy(pop['x'], pop['y'])\n",
+        "\n",
+        "# convert to GeoDataFrame\n",
+        "pop = gpd.GeoDataFrame(pop)\n"
+      ],
+      "id": "d4e3c098",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Exploration des données\n",
+        "\n",
+        "Une représentation de la densité de la population\n"
+      ],
+      "id": "0c98205a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "fig, ax = plt.subplots(1, 1, figsize=(8,10))\n",
+        "\n",
+        "pop.plot(ax=ax, column='population',legend=True)\n",
+        "ax.axis('off')\n",
+        "ax.set_title('Densité de la population au Km^2 en 2020')\n",
+        "plt.show()"
+      ],
+      "id": "a7104fe5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Une représentation de l'indice de bien-être relatif (RWI)\n"
+      ],
+      "id": "41f8a2ce"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "fig, ax = plt.subplots(1, 1, figsize=(8,10))\n",
+        "# column='rwi' defines which column from our dataframe to color the points by\n",
+        "rwi.plot(ax=ax, column='rwi',legend=True)\n",
+        "ax.axis('off')\n",
+        "ax.set_title('indice de bien-être relatif (RWI)')\n",
+        "plt.show()"
+      ],
+      "id": "b2959564",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Fusion des données de la population et de RWI\n",
+        "\n",
+        "On la fonction suivante utilise l'algo k-d trees pour fusionner les données.\n"
+      ],
+      "id": "0c768cf0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from scipy.spatial import KDTree\n",
+        "from shapely.geometry import Point\n",
+        "import numpy as np \n",
+        "\n",
+        "# Define function to find nearest neighbor and join population and wealth datasets accordingly\n",
+        "def ckdnearest(gdA, gdB):\n",
+        "    # create arrays from each dataset to use in k-d trees\n",
+        "    nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))\n",
+        "    nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))\n",
+        "    # create k-d tree from dataset b\n",
+        "    btree = KDTree(nB)\n",
+        "    # find the nearest point in dataset b to each point in dataset a\n",
+        "    dist, idx = btree.query(nA, k=1)\n",
+        "    # select the nearest points in b identified in the row above\n",
+        "    gdB_nearest = gdB.iloc[idx].drop(columns=\"geometry\").reset_index(drop=True)\n",
+        "    # join the nearest points from a and b as a geodataframe\n",
+        "    gdf = pd.concat(\n",
+        "        [\n",
+        "            gdA.reset_index(drop=True),\n",
+        "            gdB_nearest,\n",
+        "            pd.Series(dist, name='dist')\n",
+        "        ], \n",
+        "        axis=1)\n",
+        "\n",
+        "    return gdf"
+      ],
+      "id": "443ba767",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Les données fusionnées et conversion en données spatiales\n"
+      ],
+      "id": "d39f3457"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "overlay = ckdnearest(pop, rwi)\n",
+        "overlay.columns = ['longitude_pop', 'latitude_pop', 'pop', 'geometry', \n",
+        "                   'latitude_rwi', 'longitude_rwi', 'rwi', 'error', 'dist']\n",
+        "\n",
+        "#overlay = overlay.groupby([], as_index=False).agg('sum')\n",
+        "overlay = overlay.groupby(['latitude_rwi', 'longitude_rwi','rwi']).agg(pop=('pop',np.sum)).reset_index()\n",
+        "overlay = overlay[['latitude_rwi', 'longitude_rwi', 'pop', 'rwi']].rename({'pop':'pop_weight'}, axis=1)\n",
+        "overlay['weighted_rwi'] = overlay['pop_weight']*overlay['rwi']\n",
+        "\n",
+        "# Convert joined dataset to GeoDataFrame\n",
+        "overlay = gpd.GeoDataFrame(overlay, geometry=gpd.points_from_xy(overlay['longitude_rwi'], \n",
+        "                                                                overlay['latitude_rwi']))\n",
+        "overlay.set_crs(4326,inplace=True)\n",
+        "\n",
+        "# Show first 10 rows of dataset\n",
+        "overlay.head(10)"
+      ],
+      "id": "ea9451f5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Représentation graphique du resultat\n"
+      ],
+      "id": "7945f798"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "fig, ax = plt.subplots(1, 1, figsize=(8,10))\n",
+        "\n",
+        "# column='Population' identifies which column to use in coloring the points\n",
+        "overlay.plot(ax=ax, column='weighted_rwi',legend=True)\n",
+        "ax.axis('off')\n",
+        "ax.set_title('Togo Weighted Wealth Measures')\n",
+        "plt.show()"
+      ],
+      "id": "4a76fa59",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Representation des données par Canton\n",
+        "\n",
+        "On fusionne les données pondérées avec la carte des cantons du Togo\n"
+      ],
+      "id": "8f1009bf"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grouped = gpd.sjoin(overlay, carte, op='within', how='right')\n",
+        "#grouped = grouped.groupby(numberkey, as_index=False).agg('sum')\n",
+        "grouped = grouped.groupby(['ADM3_PCODE']).agg(pop_weight=('pop_weight',np.sum),weighted_rwi=('weighted_rwi',np.sum)).reset_index()\n",
+        "grouped['rwi'] = grouped['weighted_rwi']/grouped['pop_weight']\n",
+        "grouped = grouped[['ADM3_PCODE', 'rwi', 'pop_weight']].rename({'pop_weight':'pop'}, axis=1)\n",
+        "grouped = carte[['ADM3_PCODE', 'ADM3_FR', 'geometry']].merge(grouped, how='left',on='ADM3_PCODE')\n",
+        "nulls = grouped[pd.isnull(grouped['rwi'])].copy()\n",
+        "nonnulls = grouped[~pd.isnull(grouped['rwi'])].copy()\n",
+        "\n",
+        "imputed = []\n",
+        "for index, row in nulls.iterrows():  \n",
+        "    neighbors = nonnulls[nonnulls.geometry.touches(row['geometry'])]\n",
+        "    imputed.append(neighbors['rwi'].mean())\n",
+        "nulls['rwi'] = imputed\n",
+        "\n",
+        "grouped = pd.concat([nulls, nonnulls])\n",
+        "\n",
+        "grouped.head()"
+      ],
+      "id": "1c27397b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## La représentation de la carte de la pauvreté du Togo\n"
+      ],
+      "id": "42f364af"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "fig, ax = plt.subplots(1, 1, figsize=(8,10))\n",
+        "grouped.plot(ax=ax, column='rwi',legend=True, cmap='magma',legend_kwds={'shrink':0.5, 'label':'RWI pondéré par la population'})\n",
+        "ax.axis('off')\n",
+        "ax.set_title('Cartographie de la pauvreté avec RWI pondéré par la population')\n",
+        "plt.savefig('togo_wealth_maps.png', dpi=300, bbox_inches='tight')\n",
+        "plt.show()"
+      ],
+      "id": "119ed385",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Sauvegarde des données sous format csv et shapefiles\n"
+      ],
+      "id": "f4a8cdf2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "grouped.to_csv(\"data/df.csv\")\n",
+        "\n",
+        "file_name = \"data/base.shp\"\n",
+        "file_gpf = gpd.GeoDataFrame(grouped)\n",
+        "file_gpf.to_file(file_name)"
+      ],
+      "id": "adc59f6e",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python311\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

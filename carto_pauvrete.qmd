@@ -1,0 +1,269 @@
+---
+title: "Elaboration de la cartographie de la pauvreté du Togo"
+subtitle: "Méthode 1: Indice de bien-être pondérée par la population "
+author: "komlan Nouwokpo"
+format: html
+jupyter: python3
+---
+
+## Introduction
+
+La cartographie de la pauvreté est utile pour plusieurs raison:
+
+- Mieux cibler les couches les plus vulnérables;
+- Mieux orienter les aides aux populations
+
+Pour élaborer la cartographie de la pauvreté, il est d'usage d'utiliser les données d'enquête portant sur les dépenses des ménages. Avec les données satellitaires et des machines learnings, Meta/facebook permet d'avoir des données sur la densité de la population et sur le niveau de richesse de la population.
+
+Nous allons comparer ces deux deux méthodes en utilisant dans un premier temps les données de Meta en s'inspirant de la méthodologie utilisée ici <https://learn.geo4.dev/Population-Weighted-Wealth.html> et utilisant les données de l'enquête EHCV de 2021-2022.
+
+
+## Importation des données
+
+Les données à utiliser sont téléchargeables sur le site de <https://data.humdata.org/>:
+
+- Les données cartographiques (shapefiles) du Togo, niveau 3, les [**communes**](https://data.humdata.org/dataset/cod-ab-tgo);
+- La densité de la [**population**](https://data.humdata.org/dataset/highresolutionpopulationdensitymaps-tgo);
+- L'indice de bien-être relatif [**RWI**](https://data.humdata.org/dataset/relative-wealth-index)
+
+Pour plus de detail sur la densité de la population et le RWI, veuillez lire les metadonnées de ces données.
+
+```{python}
+# les packages à utiliser
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+
+# importation de la carte
+
+carte = gpd.read_file('data/shapefiles/tgo_admbnda_adm3_inseed_20210107.shp')
+
+
+# Importation des données de RWI
+rwi = pd.read_csv('data/tgo_relative_wealth_index.csv')
+rwi = gpd.GeoDataFrame(rwi, geometry=gpd.points_from_xy(rwi['longitude'], rwi['latitude']))
+rwi.set_crs('epsg:4326',inplace=True)
+
+```
+
+Les données de population utilisées sont télécharger sur le site Worldpop. Cette fonction importe les données 
+
+```{python}
+# Importation des données de la population
+import requests
+import rioxarray
+
+def gather_worldpop_data(data_type, country_iso=None, year=2022):
+    """
+    Build the url to pull WorldPop data from the API
+
+    Inputs:
+        data_type (string): Data type options are 'pop' (population),
+            'births', 'pregnancies', and 'urban_change'.capitalize
+        country_iso (string): The 3-letter country code, if desired. Default
+            will be global. 
+        year (int): the 4-digit year of interest for data. Default will be
+            2015.
+
+    Return (str, rioxarray DataArray): returns the name of the .tif file
+        downloaded onto your computer containing the data and the DataArray
+        containing the population counts read in using rioxarray.
+    """
+
+    # Build the API url according to user selection
+    url_base = "https://www.worldpop.org/rest/data"
+    url = url_base + '/'  + data_type + '/wpgp'
+    if country_iso:
+        url = url + '?iso3=' + country_iso
+
+    # Request the desired data; filter by year 
+    json_resp = requests.post(url).json()
+    json_resp = json_resp['data']['popyear' == year]
+    # Obtain exact .geotiff file name for the desired data
+    geotiff_file = json_resp['files'][0]
+    print('Obtaining file',geotiff_file)
+
+    geotiff_data = requests.get(geotiff_file)
+    
+    file_name = 'worldpop_' + country_iso + '_' + str(year) + '.tif'
+    print('Writing to',file_name)
+    with open(file_name,'wb') as f:
+        f.write(geotiff_data.content)
+
+    # Read in the WorldPop data as a GeoTIFF
+    worldpop_raster = rioxarray.open_rasterio(file_name)
+
+    return file_name, worldpop_raster
+
+```
+
+Importation des données du Togo
+
+```{python}
+togo_pop_file, togo_pop = gather_worldpop_data('pop','TGO',2022)
+
+
+togo_pop = togo_pop.squeeze().drop('spatial_ref').drop('band')
+togo_pop.name = 'population'
+worldpop_pop_df = togo_pop.to_dataframe().reset_index()
+
+# remove populations below 0
+pop = worldpop_pop_df[worldpop_pop_df['population'] > 0]
+# convert lat/long to geometry
+pop['geometry'] = gpd.points_from_xy(pop['x'], pop['y'])
+
+# convert to GeoDataFrame
+pop = gpd.GeoDataFrame(pop)
+
+
+```
+
+## Exploration des données
+
+Une représentation de la densité de la population
+
+
+```{python}
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(1, 1, figsize=(8,10))
+
+pop.plot(ax=ax, column='population',legend=True)
+ax.axis('off')
+ax.set_title('Densité de la population au Km^2 en 2020')
+plt.show()
+```
+
+
+Une représentation de l'indice de bien-être relatif (RWI)
+
+
+```{python}
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(1, 1, figsize=(8,10))
+# column='rwi' defines which column from our dataframe to color the points by
+rwi.plot(ax=ax, column='rwi',legend=True)
+ax.axis('off')
+ax.set_title('indice de bien-être relatif (RWI)')
+plt.show()
+```
+
+## Fusion des données de la population et de RWI
+
+On la fonction suivante utilise l'algo k-d trees pour fusionner les données.
+
+```{python}
+from scipy.spatial import KDTree
+from shapely.geometry import Point
+import numpy as np 
+
+# Define function to find nearest neighbor and join population and wealth datasets accordingly
+def ckdnearest(gdA, gdB):
+    # create arrays from each dataset to use in k-d trees
+    nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
+    nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
+    # create k-d tree from dataset b
+    btree = KDTree(nB)
+    # find the nearest point in dataset b to each point in dataset a
+    dist, idx = btree.query(nA, k=1)
+    # select the nearest points in b identified in the row above
+    gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
+    # join the nearest points from a and b as a geodataframe
+    gdf = pd.concat(
+        [
+            gdA.reset_index(drop=True),
+            gdB_nearest,
+            pd.Series(dist, name='dist')
+        ], 
+        axis=1)
+
+    return gdf
+```
+
+Les données fusionnées et conversion en données spatiales
+
+```{python}
+overlay = ckdnearest(pop, rwi)
+overlay.columns = ['longitude_pop', 'latitude_pop', 'pop', 'geometry', 
+                   'latitude_rwi', 'longitude_rwi', 'rwi', 'error', 'dist']
+
+#overlay = overlay.groupby([], as_index=False).agg('sum')
+overlay = overlay.groupby(['latitude_rwi', 'longitude_rwi','rwi']).agg(pop=('pop',np.sum)).reset_index()
+overlay = overlay[['latitude_rwi', 'longitude_rwi', 'pop', 'rwi']].rename({'pop':'pop_weight'}, axis=1)
+overlay['weighted_rwi'] = overlay['pop_weight']*overlay['rwi']
+
+# Convert joined dataset to GeoDataFrame
+overlay = gpd.GeoDataFrame(overlay, geometry=gpd.points_from_xy(overlay['longitude_rwi'], 
+                                                                overlay['latitude_rwi']))
+overlay.set_crs(4326,inplace=True)
+
+# Show first 10 rows of dataset
+overlay.head(10)
+```
+
+Représentation graphique du resultat
+
+
+```{python}
+fig, ax = plt.subplots(1, 1, figsize=(8,10))
+
+# column='Population' identifies which column to use in coloring the points
+overlay.plot(ax=ax, column='weighted_rwi',legend=True)
+ax.axis('off')
+ax.set_title('Togo Weighted Wealth Measures')
+plt.show()
+```
+
+## Representation des données par Canton
+
+On fusionne les données pondérées avec la carte des cantons du Togo
+
+```{python}
+grouped = gpd.sjoin(overlay, carte, op='within', how='right')
+#grouped = grouped.groupby(numberkey, as_index=False).agg('sum')
+grouped = grouped.groupby(['ADM3_PCODE']).agg(pop_weight=('pop_weight',np.sum),weighted_rwi=('weighted_rwi',np.sum)).reset_index()
+grouped['rwi'] = grouped['weighted_rwi']/grouped['pop_weight']
+grouped = grouped[['ADM3_PCODE', 'rwi', 'pop_weight']].rename({'pop_weight':'pop'}, axis=1)
+grouped = carte[['ADM3_PCODE', 'ADM3_FR', 'geometry']].merge(grouped, how='left',on='ADM3_PCODE')
+nulls = grouped[pd.isnull(grouped['rwi'])].copy()
+nonnulls = grouped[~pd.isnull(grouped['rwi'])].copy()
+
+imputed = []
+for index, row in nulls.iterrows():  
+    neighbors = nonnulls[nonnulls.geometry.touches(row['geometry'])]
+    imputed.append(neighbors['rwi'].mean())
+nulls['rwi'] = imputed
+
+grouped = pd.concat([nulls, nonnulls])
+
+grouped.head()
+```
+
+
+## La représentation de la carte de la pauvreté du Togo
+
+```{python}
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(1, 1, figsize=(8,10))
+grouped.plot(ax=ax, column='rwi',legend=True, cmap='magma',legend_kwds={'shrink':0.5, 'label':'RWI pondéré par la population'})
+ax.axis('off')
+ax.set_title('Cartographie de la pauvreté avec RWI pondéré par la population')
+plt.savefig('togo_wealth_maps.png', dpi=300, bbox_inches='tight')
+plt.show()
+```
+
+
+## Sauvegarde des données sous format csv et shapefiles
+
+```{python}
+grouped.to_csv("data/df.csv")
+
+file_name = "data/base.shp"
+file_gpf = gpd.GeoDataFrame(grouped)
+file_gpf.to_file(file_name)
+
+```
+
+
