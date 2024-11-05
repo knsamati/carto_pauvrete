@@ -126,7 +126,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>L’indice de bien-être relatif <a href="https://data.humdata.org/dataset/relative-wealth-index"><strong>RWI</strong></a></li>
 </ul>
 <p>Pour plus de detail sur la densité de la population et le RWI, veuillez lire les metadonnées de ces données.</p>
-<div id="6440f3c6" class="cell" data-execution_count="1">
+<div id="19a79bb7" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># les packages à utiliser</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -253,7 +253,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Les données de population utilisées sont télécharger sur le site Worldpop. Cette fonction importe les données</p>
-<div id="467ab9e4" class="cell" data-execution_count="2">
+<div id="1f8c102e" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Importation des données de la population</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rioxarray</span>
@@ -301,7 +301,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> file_name, worldpop_raster</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Importation des données du Togo</p>
-<div id="d29d99d7" class="cell" data-execution_count="3">
+<div id="d4e3c098" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>togo_pop_file, togo_pop <span class="op">=</span> gather_worldpop_data(<span class="st">'pop'</span>,<span class="st">'TGO'</span>,<span class="dv">2022</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -321,9 +321,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 Writing to worldpop_TGO_2022.tif</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\3347273314.py:4: DeprecationWarning: dropping variables using `drop` is deprecated; use drop_vars.
+<pre><code>C:\Users\DELL\AppData\Local\Temp\ipykernel_9756\3347273314.py:4: DeprecationWarning: dropping variables using `drop` is deprecated; use drop_vars.
   togo_pop = togo_pop.squeeze().drop('spatial_ref').drop('band')
-C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\3347273314.py:11: SettingWithCopyWarning: 
+C:\Users\DELL\AppData\Local\Temp\ipykernel_9756\3347273314.py:11: SettingWithCopyWarning: 
 A value is trying to be set on a copy of a slice from a DataFrame.
 Try using .loc[row_indexer,col_indexer] = value instead
 
@@ -335,7 +335,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <section id="exploration-des-données" class="level2">
 <h2 class="anchored" data-anchor-id="exploration-des-données">Exploration des données</h2>
 <p>Une représentation de la densité de la population</p>
-<div id="70aea9a8" class="cell" data-execution_count="4">
+<div id="a7104fe5" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">10</span>))</span>
@@ -353,7 +353,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 </div>
 </div>
 <p>Une représentation de l’indice de bien-être relatif (RWI)</p>
-<div id="a4946ec7" class="cell" data-execution_count="5">
+<div id="b2959564" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">10</span>))</span>
@@ -374,7 +374,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <section id="fusion-des-données-de-la-population-et-de-rwi" class="level2">
 <h2 class="anchored" data-anchor-id="fusion-des-données-de-la-population-et-de-rwi">Fusion des données de la population et de RWI</h2>
 <p>On la fonction suivante utilise l’algo k-d trees pour fusionner les données.</p>
-<div id="d8c70028" class="cell" data-execution_count="6">
+<div id="443ba767" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.spatial <span class="im">import</span> KDTree</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shapely.geometry <span class="im">import</span> Point</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np </span>
@@ -402,7 +402,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> gdf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Les données fusionnées et conversion en données spatiales</p>
-<div id="14ff138f" class="cell" data-execution_count="7">
+<div id="ea9451f5" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>overlay <span class="op">=</span> ckdnearest(pop, rwi)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>overlay.columns <span class="op">=</span> [<span class="st">'longitude_pop'</span>, <span class="st">'latitude_pop'</span>, <span class="st">'pop'</span>, <span class="st">'geometry'</span>, </span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                   <span class="st">'latitude_rwi'</span>, <span class="st">'longitude_rwi'</span>, <span class="st">'rwi'</span>, <span class="st">'error'</span>, <span class="st">'dist'</span>]</span>
@@ -420,7 +420,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Show first 10 rows of dataset</span></span>
 <span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>overlay.head(<span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\2260589084.py:6: FutureWarning: The provided callable &lt;function sum at 0x0000025EF906BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
+<pre><code>C:\Users\DELL\AppData\Local\Temp\ipykernel_9756\2260589084.py:6: FutureWarning: The provided callable &lt;function sum at 0x000002277F83BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
   overlay = overlay.groupby(['latitude_rwi', 'longitude_rwi','rwi']).agg(pop=('pop',np.sum)).reset_index()</code></pre>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="7">
@@ -537,7 +537,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 </div>
 </div>
 <p>Représentation graphique du resultat</p>
-<div id="b8e35724" class="cell" data-execution_count="8">
+<div id="4a76fa59" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">10</span>))</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># column='Population' identifies which column to use in coloring the points</span></span>
@@ -557,7 +557,7 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <section id="representation-des-données-par-canton" class="level2">
 <h2 class="anchored" data-anchor-id="representation-des-données-par-canton">Representation des données par Canton</h2>
 <p>On fusionne les données pondérées avec la carte des cantons du Togo</p>
-<div id="73a8b026" class="cell" data-execution_count="9">
+<div id="1c27397b" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>grouped <span class="op">=</span> gpd.sjoin(overlay, carte, op<span class="op">=</span><span class="st">'within'</span>, how<span class="op">=</span><span class="st">'right'</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co">#grouped = grouped.groupby(numberkey, as_index=False).agg('sum')</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>grouped <span class="op">=</span> grouped.groupby([<span class="st">'ADM3_PCODE'</span>]).agg(pop_weight<span class="op">=</span>(<span class="st">'pop_weight'</span>,np.<span class="bu">sum</span>),weighted_rwi<span class="op">=</span>(<span class="st">'weighted_rwi'</span>,np.<span class="bu">sum</span>)).reset_index()</span>
@@ -579,9 +579,9 @@ See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stab
 <div class="cell-output cell-output-stderr">
 <pre><code>C:\Users\DELL\AppData\Local\Programs\Python\Python311\Lib\site-packages\IPython\core\interactiveshell.py:3517: FutureWarning: The `op` parameter is deprecated and will be removed in a future release. Please use the `predicate` parameter instead.
   if await self.run_code(code, result, async_=asy):
-C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\2906270163.py:3: FutureWarning: The provided callable &lt;function sum at 0x0000025EF906BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
+C:\Users\DELL\AppData\Local\Temp\ipykernel_9756\2906270163.py:3: FutureWarning: The provided callable &lt;function sum at 0x000002277F83BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
   grouped = grouped.groupby(['ADM3_PCODE']).agg(pop_weight=('pop_weight',np.sum),weighted_rwi=('weighted_rwi',np.sum)).reset_index()
-C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\2906270163.py:3: FutureWarning: The provided callable &lt;function sum at 0x0000025EF906BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
+C:\Users\DELL\AppData\Local\Temp\ipykernel_9756\2906270163.py:3: FutureWarning: The provided callable &lt;function sum at 0x000002277F83BEC0&gt; is currently using SeriesGroupBy.sum. In a future version of pandas, the provided callable will be used directly. To keep current behavior pass 'sum' instead.
   grouped = grouped.groupby(['ADM3_PCODE']).agg(pop_weight=('pop_weight',np.sum),weighted_rwi=('weighted_rwi',np.sum)).reset_index()</code></pre>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="9">
@@ -649,7 +649,7 @@ C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\2906270163.py:3: FutureWarning:
 </section>
 <section id="la-représentation-de-la-carte-de-la-pauvreté-du-togo" class="level2">
 <h2 class="anchored" data-anchor-id="la-représentation-de-la-carte-de-la-pauvreté-du-togo">La représentation de la carte de la pauvreté du Togo</h2>
-<div id="dbcbcedc" class="cell" data-execution_count="10">
+<div id="119ed385" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">8</span>,<span class="dv">10</span>))</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>grouped.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'rwi'</span>,legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span><span class="st">'magma'</span>,legend_kwds<span class="op">=</span>{<span class="st">'shrink'</span>:<span class="fl">0.5</span>, <span class="st">'label'</span>:<span class="st">'RWI pondéré par la population'</span>})</span>
@@ -668,10 +668,10 @@ C:\Users\DELL\AppData\Local\Temp\ipykernel_27460\2906270163.py:3: FutureWarning:
 </section>
 <section id="sauvegarde-des-données-sous-format-csv-et-shapefiles" class="level2">
 <h2 class="anchored" data-anchor-id="sauvegarde-des-données-sous-format-csv-et-shapefiles">Sauvegarde des données sous format csv et shapefiles</h2>
-<div id="d2159efc" class="cell" data-execution_count="11">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>grouped.to_csv(<span class="st">"df.csv"</span>)</span>
+<div id="adc59f6e" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>grouped.to_csv(<span class="st">"data/df.csv"</span>)</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>file_name <span class="op">=</span> <span class="st">"base.shp"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>file_name <span class="op">=</span> <span class="st">"data/base.shp"</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>file_gpf <span class="op">=</span> gpd.GeoDataFrame(grouped)</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>file_gpf.to_file(file_name)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
